@@ -59,7 +59,7 @@ if (withAudio) {
     const ms = Math.round((starts[i] + LEAD) * 1000);
     return `[${i + 1}:a]adelay=${ms}|${ms}[a${i}]`;
   });
-  const mix = `${audioFiles.map((_, i) => `[a${i}]`).join('')}amix=inputs=${audioFiles.length}:normalize=0[aout]`;
+  const mix = `${audioFiles.map((_, i) => `[a${i}]`).join('')}amix=inputs=${audioFiles.length}:normalize=0,loudnorm=I=-16:TP=-1.5[aout]`;
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', silent, ...inputs,
     '-filter_complex', [...delays, mix].join(';'),
     '-map', '0:v', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k',
