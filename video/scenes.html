@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Claude Code Sub-agents & Skills</title>
+<style>
+  :root{
+    --bg:#14120f; --panel:#1f1c18; --line:#3a352e; --text:#f3eee6; --muted:#a69d90;
+    --accent:#d97757; --blue:#6aa5e8; --green:#7cc48a; --yellow:#e8c36a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1280px;height:720px;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:"IPAPGothic","IPAGothic",sans-serif}
+  .scene{position:absolute;inset:0;padding:56px 72px 120px;display:none}
+  .scene.on{display:block}
+  .tag{display:inline-block;font-size:18px;color:var(--accent);letter-spacing:.12em;margin-bottom:10px}
+  h1{font-size:64px;line-height:1.2}
+  h2{font-size:40px;margin-bottom:28px}
+  .muted{color:var(--muted)}
+  .a{opacity:0;animation:up .6s ease-out forwards;animation-delay:var(--d,0s)}
+  .pop{opacity:0;animation:pop .5s ease-out forwards;animation-delay:var(--d,0s)}
+  @keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,119,87,.0)}50%{box-shadow:0 0 0 10px rgba(217,119,87,.25)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 26px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .grid4{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .big{font-size:26px;line-height:1.6}
+  .em{color:var(--accent);font-weight:bold}
+  .icon{font-size:54px;margin-bottom:10px}
+  pre{font-family:"IPAGothic",monospace;font-size:19px;line-height:1.55;background:#0d0c0a;border:1px solid var(--line);
+    border-radius:12px;padding:20px 24px;white-space:pre}
+  .k{color:var(--blue)} .s{color:var(--green)} .c{color:#7d756a} .y{color:var(--yellow)}
+  .caps{position:absolute;left:0;right:0;bottom:28px;text-align:center}
+  .caps p{display:none;margin:0 auto;max-width:1100px;font-size:25px;line-height:1.45;background:rgba(0,0,0,.72);
+    padding:10px 22px;border-radius:10px}
+  .caps p.on{display:inline-block}
+  .box{border:2px solid var(--line);border-radius:14px;padding:16px;text-align:center;background:var(--panel);font-size:22px}
+  .arrow{height:4px;background:var(--accent);transform-origin:left;transform:scaleX(0);animation:grow .6s ease-out forwards;animation-delay:var(--d,0s)}
+  table{border-collapse:collapse;width:100%;font-size:22px}
+  th,td{border-bottom:1px solid var(--line);padding:13px 14px;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:normal}
+  .pill{display:inline-block;padding:4px 14px;border-radius:999px;background:#2a251f;border:1px solid var(--line);font-size:20px;margin:4px 6px 4px 0}
+  .progress{position:absolute;left:0;bottom:0;height:5px;background:var(--accent)}
+</style>
+</head>
+<body>
+
+<!-- 1. タイトル -->
+<section class="scene" data-dur="9">
+  <div style="height:120px"></div>
+  <div class="tag a">CLAUDE CODE 入門</div>
+  <h1 class="a" style="--d:.3s">Sub-agents と Skills<br>しくみと使い方</h1>
+  <p class="big muted a" style="--d:.9s;margin-top:24px">「部下に任せる」と「手順書を渡す」── 2つの拡張機能をやさしく解説</p>
+  <div class="caps">
+    <p data-s="0" data-e="4.5">Claude Code には、作業を賢く広げる2つの仕組みがあります。</p>
+    <p data-s="4.5" data-e="9">それが「Sub-agents（サブエージェント）」と「Skills（スキル）」です。</p>
+  </div>
+</section>
+
+<!-- 2. ひとことで -->
+<section class="scene" data-dur="14">
+  <div class="tag a">OVERVIEW</div>
+  <h2 class="a">ひとことで言うと</h2>
+  <div class="grid2">
+    <div class="card pop" style="--d:.6s">
+      <div class="icon">🧑‍💼</div>
+      <h3 style="font-size:32px;color:var(--blue)">Sub-agent</h3>
+      <p class="big" style="margin-top:10px">専門の<span class="em">「部下」</span><br>別の作業部屋（コンテキスト）で仕事をして、結果だけを報告</p>
+    </div>
+    <div class="card pop" style="--d:4.5s">
+      <div class="icon">📘</div>
+      <h3 style="font-size:32px;color:var(--green)">Skill</h3>
+      <p class="big" style="margin-top:10px">必要なときに開く<span class="em">「手順書」</span><br>Claude 自身が読み込んで、そのやり方で作業する</p>
+    </div>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="4.5">サブエージェントは、仕事を任せられる専門の「部下」です。</p>
+    <p data-s="4.5" data-e="9">スキルは、必要なときだけ開く「手順書」や「マニュアル」です。</p>
+    <p data-s="9" data-e="14">まずはサブエージェントの仕組みから見ていきましょう。</p>
+  </div>
+</section>
+
+<!-- 3. Sub-agent の仕組み -->
+<section class="scene" data-dur="18">
+  <div class="tag a">SUB-AGENTS ① しくみ</div>
+  <h2 class="a">仕事を「別の部屋」に任せる</h2>
+  <div style="display:grid;grid-template-columns:300px 1fr 300px;align-items:center;gap:0;margin-top:60px">
+    <div class="box pop" style="--d:.5s;border-color:var(--accent)">🤖 メインの Claude<br><span class="muted" style="font-size:17px">あなたと会話中</span></div>
+    <div style="padding:0 18px">
+      <div class="a muted" style="--d:2.5s;font-size:18px;text-align:center">① タスクを依頼「認証まわりのコードを調べて」</div>
+      <div class="arrow" style="--d:2.5s;margin:8px 0 26px"></div>
+      <div class="arrow" style="--d:9s;margin:8px 0;background:var(--green);transform-origin:right"></div>
+      <div class="a muted" style="--d:9s;font-size:18px;text-align:center">③ 要約した結果だけを返す</div>
+    </div>
+    <div class="box pop" style="--d:3.2s;border-color:var(--blue)">🧑‍💼 Sub-agent<br><span class="muted" style="font-size:17px">専用のコンテキスト</span></div>
+  </div>
+  <div class="card a" style="--d:5s;margin-top:34px;margin-left:auto;width:560px;font-size:20px;line-height:1.7">
+    ② サブエージェントの部屋の中で…<br>
+    <span class="muted">ファイルを 30 個読む / grep を何度も実行 / 試行錯誤</span><br>
+    → <span class="em">この大量のログはメインに持ち込まれない</span>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="5">メインの Claude は、タスクをサブエージェントに依頼できます。</p>
+    <p data-s="5" data-e="9.5">サブエージェントは自分専用のコンテキストで、たくさんのファイルを読んだり調べたりします。</p>
+    <p data-s="9.5" data-e="14">そして、最後に要約した結果だけをメインに返します。</p>
+    <p data-s="14" data-e="18">途中の大量のやり取りでメインの会話が埋まらない、これが最大のポイントです。</p>
+  </div>
+</section>
+
+<!-- 4. メリット -->
+<section class="scene" data-dur="16">
+  <div class="tag a">SUB-AGENTS ② メリット</div>
+  <h2 class="a">なぜ便利なのか</h2>
+  <div class="grid4">
+    <div class="card pop" style="--d:.6s"><p class="big"><span class="em">🧹 コンテキスト節約</span><br><span style="font-size:21px" class="muted">調査の途中経過でメインの会話が散らからない</span></p></div>
+    <div class="card pop" style="--d:4s"><p class="big"><span class="em">⚡ 並列実行</span><br><span style="font-size:21px" class="muted">複数のサブエージェントを同時に走らせられる</span></p></div>
+    <div class="card pop" style="--d:7.5s"><p class="big"><span class="em">🔒 ツールを制限</span><br><span style="font-size:21px" class="muted">「読むだけ」など使えるツールを絞って安全に</span></p></div>
+    <div class="card pop" style="--d:11s"><p class="big"><span class="em">🎯 専門化</span><br><span style="font-size:21px" class="muted">役割ごとの指示・モデルを固定して品質を安定</span></p></div>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="4">メリットの1つ目は、メインのコンテキストを節約できることです。</p>
+    <p data-s="4" data-e="7.5">2つ目は、複数のサブエージェントを並列に動かせることです。</p>
+    <p data-s="7.5" data-e="11">3つ目は、使えるツールを制限して安全に任せられることです。</p>
+    <p data-s="11" data-e="16">4つ目は、役割ごとに専用の指示やモデルを決めて、品質を安定させられることです。</p>
+  </div>
+</section>
+
+<!-- 5. 作り方 -->
+<section class="scene" data-dur="20">
+  <div class="tag a">SUB-AGENTS ③ 作り方</div>
+  <h2 class="a">Markdown ファイル 1 つで定義</h2>
+  <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:28px">
+<pre class="a" style="--d:.6s"><span class="c"># .claude/agents/code-reviewer.md</span>
+<span class="y">---</span>
+<span class="k">name</span>: code-reviewer
+<span class="k">description</span>: <span class="s">コード変更後のレビュー担当。
+  変更を加えたら積極的に使うこと。</span>
+<span class="k">tools</span>: Read, Grep, Glob, Bash
+<span class="k">model</span>: sonnet
+<span class="y">---</span>
+あなたは経験豊富なレビュアーです。
+git diff を確認し、バグ・可読性・
+セキュリティの観点で指摘してください。</pre>
+    <div>
+      <div class="card a" style="--d:3.5s;margin-bottom:14px"><span class="em">name</span> <span class="muted">… 呼び出し名</span></div>
+      <div class="card a" style="--d:6s;margin-bottom:14px"><span class="em">description</span> <span class="muted">… いつ使うか。<br>Claude はこれを見て任せるか判断</span></div>
+      <div class="card a" style="--d:10s;margin-bottom:14px"><span class="em">tools / model</span> <span class="muted">… 使えるツール・モデル（省略可）</span></div>
+      <div class="card a" style="--d:13s"><span class="em">本文</span> <span class="muted">… サブエージェント専用のシステムプロンプト</span></div>
+    </div>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="3.5">サブエージェントは、Markdown ファイル1つで作れます。</p>
+    <p data-s="3.5" data-e="6">先頭の設定部分に、名前を書きます。</p>
+    <p data-s="6" data-e="10">description には「いつ使うか」を書きます。Claude はここを読んで、任せるかどうかを判断します。</p>
+    <p data-s="10" data-e="13">tools と model で、使えるツールとモデルを指定できます。</p>
+    <p data-s="13" data-e="20">本文は、そのサブエージェント専用のシステムプロンプトになります。</p>
+  </div>
+</section>
+
+<!-- 6. 使い方 -->
+<section class="scene" data-dur="20">
+  <div class="tag a">SUB-AGENTS ④ 使い方</div>
+  <h2 class="a">置き場所と呼び出し方</h2>
+  <div class="grid2">
+    <div>
+      <div class="card a" style="--d:.5s;margin-bottom:14px;font-size:21px;line-height:1.7">
+        <span class="em">置き場所</span><br>
+        📁 <code>.claude/agents/</code> <span class="muted">… プロジェクト用（チームで共有）</span><br>
+        📁 <code>~/.claude/agents/</code> <span class="muted">… 自分用（全プロジェクト）</span>
+      </div>
+      <div class="card a" style="--d:5s;font-size:21px;line-height:1.7">
+        <span class="em">/agents コマンド</span><br>
+        <span class="muted">対話形式で作成・編集・ツール設定ができる</span>
+      </div>
+    </div>
+    <div>
+      <div class="card a" style="--d:8.5s;margin-bottom:14px;font-size:21px;line-height:1.7">
+        <span class="em">① 自動で任せる</span><br><span class="muted">description に合うタスクなら Claude が自分で委任</span>
+      </div>
+      <div class="card a" style="--d:12s;margin-bottom:14px;font-size:21px;line-height:1.7">
+        <span class="em">② 名前を指定して頼む</span><br>
+        <code style="color:var(--green)">「code-reviewer サブエージェントで<br>今の変更をレビューして」</code>
+      </div>
+      <div class="a" style="--d:15.5s;font-size:19px" class="muted">
+        組み込み: <span class="pill">Explore（調査）</span><span class="pill">Plan（計画）</span><span class="pill">general-purpose</span>
+      </div>
+    </div>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="5">ファイルはプロジェクトの .claude/agents か、ホームの ~/.claude/agents に置きます。</p>
+    <p data-s="5" data-e="8.5">/agents コマンドを使えば、対話形式で作成や編集ができます。</p>
+    <p data-s="8.5" data-e="12">description に合う仕事なら、Claude が自動で任せてくれます。</p>
+    <p data-s="12" data-e="15.5">もちろん、名前を指定して明示的に頼むこともできます。</p>
+    <p data-s="15.5" data-e="20">また、調査用の Explore や計画用の Plan など、組み込みのサブエージェントも用意されています。</p>
+  </div>
+</section>
+
+<!-- 7. Skills の仕組み -->
+<section class="scene" data-dur="20">
+  <div class="tag a" style="color:var(--green)">SKILLS ① しくみ</div>
+  <h2 class="a">必要なときだけ読み込む「手順書」</h2>
+  <div style="display:flex;flex-direction:column;gap:16px;margin-top:6px">
+    <div class="card a" style="--d:3s;display:flex;gap:22px;align-items:center;border-left:6px solid var(--green)">
+      <div style="font-size:40px;width:60px">1</div>
+      <div class="big"><span class="em">名前と説明だけ</span>を常に把握 <span class="muted" style="font-size:20px">… 起動時。とても軽い</span></div>
+    </div>
+    <div class="card a" style="--d:7.5s;display:flex;gap:22px;align-items:center;border-left:6px solid var(--blue)">
+      <div style="font-size:40px;width:60px">2</div>
+      <div class="big">関係ありそうなら <span class="em">SKILL.md 本文</span>を読む <span class="muted" style="font-size:20px">… 必要になった時</span></div>
+    </div>
+    <div class="card a" style="--d:12s;display:flex;gap:22px;align-items:center;border-left:6px solid var(--yellow)">
+      <div style="font-size:40px;width:60px">3</div>
+      <div class="big">さらに必要なら <span class="em">参考資料・スクリプト</span>を使う <span class="muted" style="font-size:20px">… 段階的に</span></div>
+    </div>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="3">次はスキルです。スキルは「段階的に読み込まれる手順書」です。</p>
+    <p data-s="3" data-e="7.5">Claude は最初、各スキルの名前と短い説明だけを知っています。</p>
+    <p data-s="7.5" data-e="12">タスクに関係があると判断したときに、初めて SKILL.md の本文を読み込みます。</p>
+    <p data-s="12" data-e="16">さらに必要なら、同じフォルダの資料やスクリプトも使います。</p>
+    <p data-s="16" data-e="20">だから、スキルをたくさん入れてもコンテキストをほとんど消費しません。</p>
+  </div>
+</section>
+
+<!-- 8. Skill の作り方 -->
+<section class="scene" data-dur="20">
+  <div class="tag a" style="color:var(--green)">SKILLS ② 作り方</div>
+  <h2 class="a">フォルダ ＋ SKILL.md</h2>
+  <div style="display:grid;grid-template-columns:0.8fr 1.4fr;gap:28px">
+<pre class="a" style="--d:.6s"><span class="c"># フォルダ構成</span>
+.claude/skills/
+└─ <span class="y">release-notes/</span>
+   ├─ <span class="s">SKILL.md</span>
+   ├─ template.md
+   └─ scripts/
+      └─ collect.sh</pre>
+<pre class="a" style="--d:4s"><span class="c"># SKILL.md</span>
+<span class="y">---</span>
+<span class="k">name</span>: release-notes
+<span class="k">description</span>: <span class="s">リリースノートを作成する。
+  「リリースノート」「変更履歴」と
+  言われたときに使う。</span>
+<span class="y">---</span>
+1. scripts/collect.sh でコミットを集める
+2. template.md の形式で整理する
+3. 新機能 / 修正 / 破壊的変更 に分類</pre>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="4">スキルは、フォルダと SKILL.md というファイルで作ります。</p>
+    <p data-s="4" data-e="9">SKILL.md の先頭には、名前と説明を書きます。</p>
+    <p data-s="9" data-e="14">説明には「何をするか」と「いつ使うか」を具体的に書くのがコツです。</p>
+    <p data-s="14" data-e="20">本文には手順を書き、テンプレートやスクリプトを同じフォルダに置いて参照できます。</p>
+  </div>
+</section>
+
+<!-- 9. Skill の使い方 -->
+<section class="scene" data-dur="18">
+  <div class="tag a" style="color:var(--green)">SKILLS ③ 使い方</div>
+  <h2 class="a">置き場所と呼び出し方</h2>
+  <div class="grid2">
+    <div class="card a" style="--d:.5s;font-size:21px;line-height:1.8">
+      <span class="em">置き場所</span><br>
+      📁 <code>.claude/skills/</code> <span class="muted">… プロジェクト</span><br>
+      📁 <code>~/.claude/skills/</code> <span class="muted">… 個人</span><br>
+      🧩 プラグイン <span class="muted">… 配布・共有</span>
+    </div>
+    <div>
+      <div class="card a" style="--d:6s;margin-bottom:14px;font-size:21px;line-height:1.7">
+        <span class="em">① 自動で使われる</span><br>
+        <code style="color:var(--green)">「今回のリリースノート作って」</code><br><span class="muted">→ 説明が合うスキルを Claude が選ぶ</span>
+      </div>
+      <div class="card a" style="--d:11s;font-size:21px;line-height:1.7">
+        <span class="em">② スラッシュで直接呼ぶ</span><br>
+        <code style="color:var(--green)">/release-notes</code>
+      </div>
+    </div>
+  </div>
+  <div class="caps">
+    <p data-s="0" data-e="6">スキルの置き場所は、プロジェクト用、個人用、そしてプラグインの3種類です。</p>
+    <p data-s="6" data-e="11">普通に話しかけるだけで、説明が合うスキルを Claude が自動で使います。</p>
+    <p data-s="11" data-e="18">スラッシュとスキル名を入力して、直接呼び出すこともできます。</p>
+  </div>
+</section>
+
+<!-- 10. 比較 -->
+<section class="scene" data-dur="20">
+  <div class="tag a">COMPARE</div>
+  <h2 class="a">違いと使い分け</h2>
+  <table class="a" style="--d:.6s">
+    <tr><th></th><th style="color:var(--blue)">🧑‍💼 Sub-agent</th><th style="color:var(--green)">📘 Skill</th></tr>
+    <tr class="a" style="--d:2s"><td class="muted">正体</td><td>別コンテキストで動く「部下」</td><td>Claude が読む「手順書」</td></tr>
+    <tr class="a" style="--d:5s"><td class="muted">コンテキスト</td><td>分離される（結果だけ戻る）</td><td>メインに読み込まれる</td></tr>
+    <tr class="a" style="--d:8.5s"><td class="muted">ファイル</td><td>.claude/agents/名前.md</td><td>.claude/skills/名前/SKILL.md</td></tr>
+    <tr class="a" style="--d:12s"><td class="muted">向いている仕事</td><td>大量の調査・レビュー・並列作業</td><td>決まった手順・社内ルール・定型作業</td></tr>
+  </table>
+  <div class="caps">
+    <p data-s="0" data-e="5">2つを比べてみましょう。サブエージェントは部下、スキルは手順書です。</p>
+    <p data-s="5" data-e="8.5">サブエージェントはコンテキストが分離され、スキルはメインに読み込まれます。</p>
+    <p data-s="8.5" data-e="12">ファイルの置き場所と形も少し違います。</p>
+    <p data-s="12" data-e="16">大量の調査や並列作業はサブエージェント、</p>
+    <p data-s="16" data-e="20">決まった手順やルールを守らせたいときはスキル、と使い分けましょう。</p>
+  </div>
+</section>
+
+<!-- 11. まとめ -->
+<section class="scene" data-dur="16">
+  <div class="tag a">SUMMARY</div>
+  <h2 class="a">まとめ ── 今日からできること</h2>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card a big" style="--d:1s">✅ 調べ物が多いときは「サブエージェントで調べて」と頼む</div>
+    <div class="card a big" style="--d:4.5s">✅ /agents で、レビュー担当など自分のチーム用の部下を作る</div>
+    <div class="card a big" style="--d:8s">✅ 何度も説明している手順は SKILL.md に書いてスキル化する</div>
+  </div>
+  <p class="a muted" style="--d:12s;margin-top:26px;font-size:22px;text-align:center">組み合わせも可能：サブエージェントの中でスキルを使う、など</p>
+  <div class="caps">
+    <p data-s="0" data-e="4.5">まず、調べ物が多いときはサブエージェントに任せてみましょう。</p>
+    <p data-s="4.5" data-e="8">次に、/agents コマンドで自分専用の部下を作ってみましょう。</p>
+    <p data-s="8" data-e="12">そして、何度も説明している手順は、スキルにまとめましょう。</p>
+    <p data-s="12" data-e="16">2つを組み合わせれば、Claude Code はもっと頼れる相棒になります。</p>
+  </div>
+</section>
+
+<div class="progress" id="prog"></div>
+
+<script>
+  const scenes=[...document.querySelectorAll('.scene')];
+  const durs=scenes.map(s=>+s.dataset.dur);
+  const total=durs.reduce((a,b)=>a+b,0);
+  window.TOTAL=total;
+  document.getAnimations().forEach(a=>a.pause());
+  window.renderAt=function(t){
+    let i=0,acc=0;
+    while(i<scenes.length-1 && t>=acc+durs[i]){acc+=durs[i];i++}
+    const lt=t-acc;
+    scenes.forEach((s,j)=>s.classList.toggle('on',j===i));
+    const sc=scenes[i];
+    sc.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=lt*1000});
+    sc.querySelectorAll('.caps p').forEach(p=>p.classList.toggle('on',lt>=+p.dataset.s&&lt<+p.dataset.e));
+    // scene fade in/out
+    const fade=Math.min(1,lt/0.4,(durs[i]-lt)/0.4);
+    sc.style.opacity=Math.max(0,fade);
+    document.getElementById('prog').style.width=(t/total*1280)+'px';
+  };
+  renderAt(0);
+</script>
+</body>
+</html>
