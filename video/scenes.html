@@ -326,19 +326,43 @@ git diff を確認し、バグ・可読性・
 
 <script>
   const scenes=[...document.querySelectorAll('.scene')];
-  const durs=scenes.map(s=>+s.dataset.dur);
-  const total=durs.reduce((a,b)=>a+b,0);
+  const orig=scenes.map(s=>+s.dataset.dur);   // 元の秒数（アニメーションはこの尺で設計）
+  let durs=orig.slice(), lead=scenes.map(()=>0), speak=orig.slice();
+  let total=durs.reduce((a,b)=>a+b,0);
   window.TOTAL=total;
   document.getAnimations().forEach(a=>a.pause());
+
+  // ナレーション音声の長さに合わせて尺を変える
+  // audioDurs[i]: シーン i の音声の秒数, LEAD: 音声が始まるまでの間, TAIL: 音声後の余白
+  window.applyTiming=function(audioDurs,LEAD,TAIL){
+    lead=audioDurs.map(()=>LEAD);
+    speak=audioDurs.slice();
+    durs=audioDurs.map(d=>LEAD+d+TAIL);
+    scenes.forEach((sc,i)=>{
+      // 字幕は文字数の割合で音声の中に割り振る
+      const ps=[...sc.querySelectorAll('.caps p')];
+      const lens=ps.map(p=>p.textContent.length), sum=lens.reduce((a,b)=>a+b,0);
+      let acc=LEAD;
+      ps.forEach((p,j)=>{
+        p.dataset.s=acc; acc+=speak[i]*lens[j]/sum;
+        p.dataset.e=(j===ps.length-1)?durs[i]:acc;
+      });
+    });
+    total=durs.reduce((a,b)=>a+b,0);
+    window.TOTAL=total;
+    return {durs,total};
+  };
+
   window.renderAt=function(t){
     let i=0,acc=0;
     while(i<scenes.length-1 && t>=acc+durs[i]){acc+=durs[i];i++}
     const lt=t-acc;
     scenes.forEach((s,j)=>s.classList.toggle('on',j===i));
     const sc=scenes[i];
-    sc.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=lt*1000});
+    // 元の尺で作ったアニメーションを、音声の長さに引き伸ばして再生
+    const at=Math.max(0,lt-lead[i])*orig[i]/speak[i];
+    sc.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=at*1000});
     sc.querySelectorAll('.caps p').forEach(p=>p.classList.toggle('on',lt>=+p.dataset.s&&lt<+p.dataset.e));
-    // scene fade in/out
     const fade=Math.min(1,lt/0.4,(durs[i]-lt)/0.4);
     sc.style.opacity=Math.max(0,fade);
     document.getElementById('prog').style.width=(t/total*1280)+'px';
